@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.atteo.classindex:classindex:3.4'
+    annotationProcessor 'org.atteo.classindex:classindex:3.4' // for gradle 5.0+
+
+    //Lombok
+/*    compileOnly 'org.projectlombok:lombok:1.18.12'
+    annotationProcessor 'org.projectlombok:lombok:1.18.12'*/
+}
+
+test {
+    useJUnitPlatform()
+}
