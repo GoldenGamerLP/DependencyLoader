@@ -1,14 +1,13 @@
 package me.alex;
 
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.function.Consumer;
 
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Target(java.lang.annotation.ElementType.CONSTRUCTOR)
-public @interface DependencyConstructor {
+public @interface AutoRun {
 
-
-
+    int priority() default 0;
 }

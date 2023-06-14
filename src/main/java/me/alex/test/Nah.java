@@ -1,12 +1,12 @@
 package me.alex.test;
 
+import me.alex.AutoLoadable;
 import me.alex.DependencyConstructor;
-import me.alex.InjectDependency;
 
-@InjectDependency
+@AutoLoadable()
 public class Nah {
 
-    @DependencyConstructor
+    @DependencyConstructor()
     public Nah() {
     }
 }

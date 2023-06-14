@@ -1,9 +1,9 @@
 package me.alex.test;
 
 import me.alex.DependencyConstructor;
-import me.alex.InjectDependency;
+import me.alex.AutoLoadable;
 
-@InjectDependency
+@AutoLoadable
 public class WasGeht {
 
     @DependencyConstructor
