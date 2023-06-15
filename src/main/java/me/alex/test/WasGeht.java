@@ -1,7 +1,7 @@
 package me.alex.test;
 
-import me.alex.DependencyConstructor;
-import me.alex.AutoLoadable;
+import me.alex.annotation.AutoLoadable;
+import me.alex.annotation.DependencyConstructor;
 
 @AutoLoadable
 public class WasGeht {

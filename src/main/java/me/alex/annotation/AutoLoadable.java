@@ -1,4 +1,4 @@
-package me.alex;
+package me.alex.annotation;
 
 import org.atteo.classindex.IndexAnnotated;
 

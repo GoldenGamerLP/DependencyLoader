@@ -4,9 +4,8 @@ import me.alex.annotation.AutoLoadable;
 import me.alex.annotation.DependencyConstructor;
 
 @AutoLoadable()
-public class Nah {
-
-    @DependencyConstructor()
-    public Nah() {
+public class Test10 {
+    @DependencyConstructor
+    public Test10(Test9 test) {
     }
 }
