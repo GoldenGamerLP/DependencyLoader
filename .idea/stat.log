@@ -354,3 +354,13 @@
 {"ts":1686762490860,"action":"FILE_OPENED","file":"/src/main/java/me/alex/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"230"}}
 {"ts":1686762525037,"action":"IDE_DEACTIVATED"}
 {"ts":1686762526904,"action":"IDE_ACTIVATED"}
+{"ts":1686762565333,"action":"FILE_CLOSED","file":"/src/main/java/me/alex/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"230"}}
+{"ts":1686762565333,"action":"FILE_OPENED","file":"/src/main/java/me/alex/Dependency.java","tags":{"FILE_LINE_OF_CODE":"56"}}
+{"ts":1686762596425,"action":"IDE_DEACTIVATED"}
+{"ts":1686762596606,"action":"PROJECT_CLOSED","tags":{"PROJECT_NAME":"DependencyTest"}}
+{"ts":1686822755577,"action":"FILE_OPENED","file":"/src/main/java/me/alex/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"230"}}
+{"ts":1686822760431,"action":"FILE_CLOSED","file":"/src/main/java/me/alex/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"230"}}
+{"ts":1686822760431,"action":"FILE_OPENED","file":"/src/main/java/me/alex/Dependency.java","tags":{"FILE_LINE_OF_CODE":"56"}}
+{"ts":1686822760135,"action":"PROJECT_OPENED","tags":{"PROJECT_NAME":"DependencyTest"}}
+{"ts":1686822768304,"action":"FILE_CLOSED","file":"/src/main/java/me/alex/Dependency.java","tags":{"FILE_LINE_OF_CODE":"56"}}
+{"ts":1686822768304,"action":"FILE_OPENED","file":"/src/main/java/me/alex/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"230"}}
