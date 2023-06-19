@@ -37,6 +37,7 @@ public class Dependency {
     public List<Method> getInjectionMethods() {
         return injectionMethods;
     }
+
     public List<Class<?>> getConstructorParameters() {
         return List.of(constructor.getParameterTypes());
     }

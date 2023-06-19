@@ -5,7 +5,6 @@ import me.alex.annotation.AutoRun;
 import me.alex.annotation.DependencyConstructor;
 import me.alex.annotation.Inject;
 import me.alex.pojo.Dependency;
-import me.alex.test.Wichtig;
 import org.atteo.classindex.ClassIndex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,73 +12,39 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.*;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
-import java.util.stream.StreamSupport;
 
 public final class DependencyManager {
 
-    /*private final Comparator<Dependency> dependenciesLoadOrder = (o1, o2) -> {
-        if (o1.getDependencies().contains(o2.getClazz()) && o2.getDependencies().contains(o1.getClazz())) {
-            throw new RuntimeException("Cyclic dependency between " + o1.getClazz().getName() + " and " + o2.getClazz().getName());
-        }
-
-        //Sort after if the class is a dependency of the other class
-        return o1.getDependencies().contains(o2.getClazz()) ? 1 : -1;
-    };*/
-    private final Comparator<Dependency> dependenciesLoadOrder = (dependency1, dependency2) -> {
-        Class<?> class1 = dependency1.getClazz();
-        Class<?> class2 = dependency2.getClazz();
-
-        if (class1.equals(class2)) {
-            throw new RuntimeException("Cyclic dependency between " + class1.getName() + " and " + class2.getName());
-        }
-
-        List<Class<?>> dependencies1 = dependency1.getDependencies();
-        List<Class<?>> dependencies2 = dependency2.getDependencies();
-
-        boolean hasDependency1On2 = dependencies1.contains(class2);
-        boolean hasDependency2On1 = dependencies2.contains(class1);
-
-        if (hasDependency1On2 && !hasDependency2On1) {
-            return -1; // dependency1 ist abhängig von dependency2, dependency2 sollte zuerst sortiert werden
-        } else if (hasDependency2On1 && !hasDependency1On2) {
-            return 1; // dependency2 ist abhängig von dependency1, dependency1 sollte zuerst sortiert werden
-        } else {
-            return 0; // Keine direkte Abhängigkeit, Reihenfolge spielt keine Rolle
-        }
-    };
-
+    private static DependencyManager instance;
     private final ExecutorService executor;
-    private final List<Dependency> dependencies;
     private final Map<Class<?>, Object> createdObjects;
     private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
-    private static DependencyManager instance;
+    private List<Dependency> sortedDependencies;
+
+    private DependencyManager() {
+        this.createdObjects = new ConcurrentHashMap<>();
+        this.executor = Executors.newCachedThreadPool();
+    }
 
     public static DependencyManager getDependencyManager() {
         //Singleton
-        if(instance == null) {
+        if (instance == null) {
             instance = new DependencyManager();
         }
         return instance;
-    }
-
-    private DependencyManager() {
-        this.dependencies = new CopyOnWriteArrayList<>();
-        this.createdObjects = new ConcurrentHashMap<>();
-        this.executor = Executors.newCachedThreadPool();
     }
 
     public void init() {
         Instant start = Instant.now();
         Iterable<Class<?>> classes = getClasses();
         logger.info("Loading classes, dependencies, fields and methods...");
-        //computeDependencies(classes.spliterator(), 2, this::loadClasses);
-        classes.forEach(this::loadClasses);
+        indexClasses();
         logger.info("Generating load order...");
-        generateLoadOrder();
         logger.info(printClassesAndInfo());
         logger.info("Creating instances...");
         createInstances();
@@ -90,11 +55,15 @@ public final class DependencyManager {
         logger.info("Finished in " + (Instant.now().toEpochMilli() - start.toEpochMilli()) + "ms");
     }
 
-    public synchronized void addDependency(Class<?> clazz, Object object) {
-        if (createdObjects.containsKey(clazz)) {
-            throw new RuntimeException("Dependency " + clazz.getName() + " already exists");
+    private void indexClasses() {
+        Iterable<Class<?>> classes = getClasses();
+        List<Dependency> dependencies = new ArrayList<>();
+
+        for (Class<?> clazz : classes) {
+            dependencies.add(computeClass(clazz));
         }
-        createdObjects.put(clazz, object);
+
+        sortedDependencies = sortTopological1(dependencies);
     }
 
     public synchronized void addDependency(Object object) {
@@ -108,10 +77,61 @@ public final class DependencyManager {
         return createdObjects.get(clazz);
     }
 
+    public synchronized void addDependency(Class<?> clazz, Object object) {
+        if (createdObjects.containsKey(clazz)) {
+            throw new RuntimeException("Dependency " + clazz.getName() + " already exists");
+        }
+        createdObjects.put(clazz, object);
+    }
+
+    private List<Dependency> sortTopological1(List<Dependency> dependencies) {
+        List<Dependency> sorted = new ArrayList<>();
+        Set<Class<?>> visited = new HashSet<>();
+
+        Stack<Dependency> stack = new Stack<>();
+        for (Dependency dependency : dependencies) {
+            if (!visited.contains(dependency.getClazz())) {
+                stack.push(dependency);
+                while (!stack.isEmpty()) {
+                    Dependency current = stack.peek();
+                    visited.add(current.getClazz());
+
+                    boolean allDependenciesVisited = true;
+                    for (Class<?> clazz : current.getDependencies()) {
+                        Dependency dep = findDependency(dependencies, clazz);
+                        if (!visited.contains(clazz)) {
+                            stack.push(dep);
+                            allDependenciesVisited = false;
+                        }
+                    }
+
+                    //TODO: Check for cyclic dependencies
+                    if (allDependenciesVisited) {
+                        Dependency pop = stack.pop();
+                        if (!sorted.contains(pop)) {
+                            sorted.add(pop);
+                        }
+                    }
+                }
+            }
+        }
+
+        return sorted;
+    }
+
+    private Dependency findDependency(List<Dependency> dependencies, Class<?> clazz) {
+        for (Dependency dependency : dependencies) {
+            if (dependency.getClazz().equals(clazz)) {
+                return dependency;
+            }
+        }
+        throw new IllegalArgumentException("Dependency not found for class: " + clazz.getName());
+    }
+
     private void computeDependencies(Spliterator<Class<?>> classes, int parallelismCount, Consumer<Class<?>> spliteratorConsumer) {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         int parallelism = parallelismCount;
-        for(Spliterator<Class<?>> subIterator; (subIterator = classes.trySplit()) != null ; parallelism--) {
+        for (Spliterator<Class<?>> subIterator; (subIterator = classes.trySplit()) != null; parallelism--) {
             System.out.println(parallelism);
 
 
@@ -120,45 +140,42 @@ public final class DependencyManager {
         }
     }
 
-    private void loadClasses(Class<?> klass) {
-        //Use spliterator to iterate over classes more efficiently
-            if(createdObjects.containsKey(klass)) return;
+    private Dependency computeClass(Class<?> klass) {
+        List<Constructor<?>> constructor = Arrays.stream(klass.getConstructors())
+                .filter(constructor1 -> constructor1.isAnnotationPresent(DependencyConstructor.class))
+                .toList();
+        if (constructor.size() != 1) {
+            throw new RuntimeException("Class " + klass.getName() + " has no or more than one constructor annotated with @DependencyConstructor");
+        }
 
-            List<Constructor<?>> constructor = Arrays.stream(klass.getConstructors())
-                    .filter(constructor1 -> constructor1.isAnnotationPresent(DependencyConstructor.class))
-                    .toList();
+        Constructor<?> cons = constructor.get(0);
+        List<Class<?>> parameterTypes = List.of(cons.getParameterTypes());
+        List<Field> fields = Arrays.stream(klass.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Inject.class))
+                .toList();
+        List<Method> methods = new ArrayList<>(Arrays.stream(klass.getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(AutoRun.class))
+                .toList());
 
-            if (constructor.size() != 1) {
-                throw new RuntimeException("Class " + klass.getName() + " has no or more than one constructor annotated with @DependencyConstructor");
-            }
+        List<Method> methodErrors = checkMethods(klass, methods);
+        List<Class<?>> errors = checkParameters(klass, parameterTypes);
+        List<Field> fieldErrors = checkFields(klass, fields);
 
-            Constructor<?> cons = constructor.get(0);
-            List<Class<?>> parameterTypes = List.of(cons.getParameterTypes());
-            List<Field> fields = Arrays.stream(klass.getDeclaredFields())
-                    .filter(field -> field.isAnnotationPresent(Inject.class))
-                    .toList();
-            List<Method> methods = new ArrayList<>(Arrays.stream(klass.getDeclaredMethods())
-                    .filter(method -> method.isAnnotationPresent(AutoRun.class))
-                    .toList());
+        if (!errors.isEmpty()) {
+            throw new RuntimeException("Class " + klass.getName() + " has invalid parameters: " + errors);
+        }
+        if (!fieldErrors.isEmpty()) {
+            throw new RuntimeException("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
+        }
+        if (!methodErrors.isEmpty()) {
+            throw new RuntimeException("Class " + klass.getName() + " has invalid methods: " + methodErrors);
+        }
 
-            List<Method> methodErrors = checkMethods(klass, methods);
-            List<Class<?>> errors = checkParameters(klass, parameterTypes);
-            List<Field> fieldErrors = checkFields(klass, fields);
+        //sort the methods by priority
+        methods.sort(Comparator.comparingInt(method -> method.getAnnotation(AutoRun.class).priority()));
 
-            if (!errors.isEmpty()) {
-                throw new RuntimeException("Class " + klass.getName() + " has invalid parameters: " + errors);
-            }
-            if (!fieldErrors.isEmpty()) {
-                throw new RuntimeException("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
-            }
-            if (!methodErrors.isEmpty()) {
-                throw new RuntimeException("Class " + klass.getName() + " has invalid methods: " + methodErrors);
-            }
-
-            //sort the methods by priority
-            methods.sort(Comparator.comparingInt(method -> method.getAnnotation(AutoRun.class).priority()));
-
-            dependencies.add(new Dependency(klass, cons, parameterTypes, fields, methods));
+        //force add the class to the load order
+        return new Dependency(klass, cons, parameterTypes, fields, methods);
     }
 
     private Iterable<Class<?>> getClasses() {
@@ -167,8 +184,9 @@ public final class DependencyManager {
 
     private String printClassesAndInfo() {
         StringBuilder builder = new StringBuilder("Classes to load:\n");
-        for (int i = 0; i < dependencies.size(); i++) {
-            Dependency dependency = dependencies.get(i);
+        Dependency[] dependencies = sortedDependencies.toArray(new Dependency[0]);
+        for (int i = 0; i < dependencies.length; i++) {
+            Dependency dependency = dependencies[i];
             String crrClazz = dependency.getClazz().getName();
             String dependencyNames = Arrays.toString(dependency.getDependencies().stream().map(Class::getName).toArray());
             String injectionNames = Arrays.toString(dependency.getInjectionFields().stream().map(field -> Modifier.toString(field.getModifiers()) + " " + field.getType().getSimpleName() + " " + field.getName()).toArray());
@@ -191,6 +209,7 @@ public final class DependencyManager {
     }
 
     private void runMethods() {
+        Dependency[] dependencies = sortedDependencies.toArray(new Dependency[0]);
         for (Dependency dependency : dependencies) {
             Object object = createdObjects.get(dependency.getClazz());
             if (object == null) {
@@ -221,6 +240,7 @@ public final class DependencyManager {
     }
 
     private void injectFields() {
+        Dependency[] dependencies = sortedDependencies.toArray(new Dependency[0]);
         for (Dependency dependency : dependencies) {
             Object object = createdObjects.get(dependency.getClazz());
             for (Field field : dependency.getInjectionFields()) {
@@ -272,7 +292,7 @@ public final class DependencyManager {
         return dependenciesError;
     }
 
-    private void hasCyclicDependency() {
+    /*private void hasCyclicDependency() {
         for (Dependency dep : dependencies) {
             for (Dependency dep1 : dependencies) {
                 if (dep.getDependencies().contains(dep1.getClazz())) {
@@ -280,19 +300,21 @@ public final class DependencyManager {
                 }
             }
         }
-    }
+    }*/
+
 
     private void generateLoadOrder() {
         //sort the dependencies by the classes they need in correct order
-        dependencies.sort(dependenciesLoadOrder);
+        /*dependencies.sort(Dependency::compareTo);
 
         AtomicInteger index = new AtomicInteger();
         for (Dependency dependency : dependencies) {
             System.out.println(index.getAndIncrement() + ": " + dependency.getClazz().getName() + " -> " + dependency.getDependencies().size() + " dependencies");
-        }
+        }*/
     }
 
     private void createInstances() {
+        Dependency[] dependencies = sortedDependencies.toArray(new Dependency[0]);
         for (Dependency dependency : dependencies) {
             if (createdObjects.containsKey(dependency.getClazz())) {
                 System.out.println("Class " + dependency.getClazz().getName() + " already created");

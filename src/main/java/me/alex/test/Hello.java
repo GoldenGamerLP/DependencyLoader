@@ -10,8 +10,6 @@ public class Hello {
 
     @Inject
     private WasGeht wasGeht;
-    @Inject
-    private Wichtig wichtig;
 
     @DependencyConstructor
     public Hello(WasGeht wasGeht, Nah nah) {
@@ -24,8 +22,4 @@ public class Hello {
         System.out.println(wasGeht.getWasGeht() + " from test");
     }
 
-    @AutoRun(priority = 2)
-    private void test2() {
-        System.out.println(wichtig.getWichtig() + " from test2");
-    }
 }
