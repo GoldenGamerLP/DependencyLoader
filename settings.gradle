@@ -1,2 +1,5 @@
 rootProject.name = 'DependencyTest'
+include 'DependencyLoader'
+include 'DependencyLoader'
+include 'DependencyExamples'
 
