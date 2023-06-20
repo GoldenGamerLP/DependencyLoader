@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 public final class DependencyManager {
 
     private static DependencyManager instance;
+    private static boolean alreadyInitialized = false;
     private final ExecutorService executor;
     private final Map<Class<?>, Object> createdObjects;
     private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
@@ -40,8 +41,10 @@ public final class DependencyManager {
     }
 
     public void init() {
+        if(alreadyInitialized) throw new IllegalStateException("Dependency already initialized");
+        alreadyInitialized = true;
+
         Instant start = Instant.now();
-        Iterable<Class<?>> classes = getClasses();
         logger.info("Loading classes, dependencies, fields and methods...");
         indexClasses();
         logger.info("Generating load order...");
@@ -63,7 +66,7 @@ public final class DependencyManager {
             dependencies.add(computeClass(clazz));
         }
 
-        sortedDependencies = sortTopological1(dependencies);
+        sortedDependencies = sortDependencies(dependencies);
     }
 
     public synchronized void addDependency(Object object) {
@@ -78,13 +81,19 @@ public final class DependencyManager {
     }
 
     public synchronized void addDependency(Class<?> clazz, Object object) {
+        if(alreadyInitialized) throw new IllegalStateException("Dependency already initialized. You can't add new dependencies after initialization");
         if (createdObjects.containsKey(clazz)) {
             throw new RuntimeException("Dependency " + clazz.getName() + " already exists");
         }
         createdObjects.put(clazz, object);
     }
 
-    private List<Dependency> sortTopological1(List<Dependency> dependencies) {
+    /**
+     * Returns a list with sorted dependencies. Uses Topological sorting.
+     * @param dependencies List of dependencies
+     * @return Sorted list of dependencies
+     */
+    private List<Dependency> sortDependencies(List<Dependency> dependencies) {
         List<Dependency> sorted = new ArrayList<>();
         Set<Class<?>> visited = new HashSet<>();
 
@@ -99,6 +108,10 @@ public final class DependencyManager {
                     boolean allDependenciesVisited = true;
                     for (Class<?> clazz : current.getDependencies()) {
                         Dependency dep = findDependency(dependencies, clazz);
+                        if(dep == null) continue;
+                        if(dep.getDependencies().contains(current.getClazz())) {
+                            throw new IllegalArgumentException("Cyclic dependency found between " + current.getClazz().getName() + " and " + dep.getClazz().getName());
+                        }
                         if (!visited.contains(clazz)) {
                             stack.push(dep);
                             allDependenciesVisited = false;
@@ -125,7 +138,7 @@ public final class DependencyManager {
                 return dependency;
             }
         }
-        throw new IllegalArgumentException("Dependency not found for class: " + clazz.getName());
+        return null;
     }
 
     private void computeDependencies(Spliterator<Class<?>> classes, int parallelismCount, Consumer<Class<?>> spliteratorConsumer) {
