@@ -73,7 +73,7 @@ public final class DependencyManager {
         Iterable<Class<?>> classes = getClasses();
         List<Dependency> dependencies = new ArrayList<>();
 
-        //TODO: use parallel if possible
+        //Maybe use parallelStream()?
         StreamSupport.stream(classes.spliterator(), false)
                 .map(this::computeClass)
                 .forEach(dependencies::add);
