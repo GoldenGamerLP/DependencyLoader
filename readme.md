@@ -1,3 +1,4 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/goldengamerlp/dependencyloader/badge)](https://www.codefactor.io/repository/github/goldengamerlp/dependencyloader) [![](https://jitpack.io/v/GoldenGamerLP/DependencyLoader.svg)](https://jitpack.io/#GoldenGamerLP/DependencyLoader)
 # Automatic Dependency Loader for Java
 ## What is DPL?
 DPL is a dependency loader for Java. DPL allows you to load dependencies (Classes) automatically without needing to import them by using annotations. It is very useful for large projects and even small projects by making your life easier and doing the hard work, loading dependencies, injecting dependencies, running methods and ordering dependencies.
