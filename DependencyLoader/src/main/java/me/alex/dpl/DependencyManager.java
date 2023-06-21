@@ -61,7 +61,8 @@ public final class DependencyManager {
         executor.shutdown();
 
         try {
-            executor.awaitTermination(5, TimeUnit.SECONDS);
+            boolean isShutdown = executor.awaitTermination(5, TimeUnit.SECONDS);
+            if (!isShutdown) logger.warn("Executor did not shutdown in time");
         } catch (InterruptedException e) {
             logger.error("Error while waiting for executor to shutdown", e);
         }
@@ -80,10 +81,21 @@ public final class DependencyManager {
         sortedDependencies = sortDependencies(dependencies);
     }
 
+    /**
+     * Add a Dependency object to the list of dependencies. Note: <b>can only be used before {@link DependencyManager#init()}</b>
+     *
+     * @param object Dependency object
+     */
     public synchronized void addDependency(Object object) {
         addDependency(object.getClass(), object);
     }
 
+    /**
+     * Returns an Object of the given class. Note: <b>cMay throw a RuntimeException if the Dependency was not found</b>
+     *
+     * @param clazz Class of the dependency
+     * @return Object of the given class
+     */
     public synchronized Object getDependency(Class<?> clazz) {
         if (!createdObjects.containsKey(clazz)) {
             throw new RuntimeException("Dependency " + clazz.getName() + " does not exist");
@@ -91,9 +103,18 @@ public final class DependencyManager {
         return createdObjects.get(clazz);
     }
 
+    /**
+     * Add a Dependency to list of dependencies. Note: <b>can only be used before {@link DependencyManager#init()}</b>
+     *
+     * @param clazz  Class of the dependency
+     * @param object Object of the dependency
+     */
     public synchronized void addDependency(Class<?> clazz, Object object) {
         if (alreadyInitialized)
             throw new IllegalStateException("Dependency already initialized. You can't add new dependencies after initialization");
+        if (!clazz.equals(object.getClass()))
+            throw new IllegalArgumentException("Class and object class are not equal");
+
         if (createdObjects.containsKey(clazz)) {
             throw new RuntimeException("Dependency " + clazz.getName() + " already exists");
         }
@@ -176,7 +197,7 @@ public final class DependencyManager {
             }
         }
 
-        List<Dependency.AutoRunMethod> methodErrors = checkMethods(klass, methods);
+        List<Dependency.AutoRunMethod> methodErrors = checkMethods(methods);
         List<Class<?>> errors = checkParameters(klass, parameterTypes);
         List<Field> fieldErrors = checkFields(klass, fields);
 
@@ -256,7 +277,7 @@ public final class DependencyManager {
         }
     }
 
-    private List<Dependency.AutoRunMethod> checkMethods(Class<?> klass, List<Dependency.AutoRunMethod> methods) {
+    private List<Dependency.AutoRunMethod> checkMethods(List<Dependency.AutoRunMethod> methods) {
         List<Dependency.AutoRunMethod> methodErrors = new ArrayList<>();
         for (Dependency.AutoRunMethod method : methods) {
             if (method.getMethod().getParameterCount() != 0) {
@@ -320,27 +341,6 @@ public final class DependencyManager {
             }
         }
         return dependenciesError;
-    }
-
-    /*private void hasCyclicDependency() {
-        for (Dependency dep : dependencies) {
-            for (Dependency dep1 : dependencies) {
-                if (dep.getDependencies().contains(dep1.getClazz())) {
-                    throw new RuntimeException("Class " + dep.getClazz().getName() + " depends on " + dep1.getClazz().getName() + " but " + dep1.getClazz().getName() + " also depends on " + dep.getClazz().getName());
-                }
-            }
-        }
-    }*/
-
-
-    private void generateLoadOrder() {
-        //sort the dependencies by the classes they need in correct order
-        /*dependencies.sort(Dependency::compareTo);
-
-        AtomicInteger index = new AtomicInteger();
-        for (Dependency dependency : dependencies) {
-            System.out.println(index.getAndIncrement() + ": " + dependency.getClazz().getName() + " -> " + dependency.getDependencies().size() + " dependencies");
-        }*/
     }
 
     private void createInstances() {
