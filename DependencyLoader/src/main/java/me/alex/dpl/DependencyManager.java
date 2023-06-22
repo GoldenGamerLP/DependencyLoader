@@ -6,11 +6,13 @@ import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
 import me.alex.dpl.pojo.Dependency;
 import me.alex.dpl.utils.ClassUtils;
+import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.reflect.ReflectionFactory;
 
 import java.lang.reflect.*;
 import java.time.Instant;
@@ -41,9 +43,9 @@ public final class DependencyManager {
         this.executor = Executors.newCachedThreadPool();
     }
 
-    public static DependencyManager getDependencyManager() {
+    public static synchronized DependencyManager getDependencyManager() {
         // Add package name of the caller class to be scanned
-        packageNames.add(ClassUtils.getCurrentClass().getPackageName());
+        packageNames.add(ClassUtils.getCurrentPackageName());
 
         if (instance == null) {
             instance = new DependencyManager();

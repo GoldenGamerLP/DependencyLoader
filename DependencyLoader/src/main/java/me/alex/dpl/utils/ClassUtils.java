@@ -2,16 +2,13 @@ package me.alex.dpl.utils;
 
 public class ClassUtils {
 
-    public static Class<?> getCurrentClass() {
-        String callerName = Thread.currentThread().getStackTrace()[2].getClassName();
-        Class<?> clazz = null;
+    public static String getCurrentClass() {
+        return Thread.currentThread().getStackTrace()[2].getClassName();
+    }
 
-        try {
-            clazz = Class.forName(callerName);
-            // Do something with it ...
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return clazz;
+    public static String getCurrentPackageName() {
+        String currentClass = getCurrentClass();
+        int lastDot = currentClass.lastIndexOf(".");
+        return currentClass.substring(0, lastDot);
     }
 }

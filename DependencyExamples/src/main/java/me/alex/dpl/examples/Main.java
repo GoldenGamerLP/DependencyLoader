@@ -13,4 +13,10 @@ public class Main {
         //Initialize the dependency manager and all dependencies
         dep.init(true);
     }
+
+    public static void test() {
+        System.out.println("test");
+        String methodCaller = Thread.currentThread().getStackTrace()[2].getClassName();
+        System.out.println(methodCaller);
+    }
 }
