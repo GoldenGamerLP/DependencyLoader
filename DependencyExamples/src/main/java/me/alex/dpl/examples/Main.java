@@ -11,6 +11,6 @@ public class Main {
         dep.addDependency(Wichtig.class, new Wichtig());
 
         //Initialize the dependency manager and all dependencies
-        dep.init();
+        dep.init(true);
     }
 }

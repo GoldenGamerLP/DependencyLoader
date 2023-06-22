@@ -5,7 +5,10 @@ import me.alex.dpl.annotation.AutoRun;
 import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
 import me.alex.dpl.pojo.Dependency;
-import org.atteo.classindex.ClassIndex;
+import me.alex.dpl.utils.ClassUtils;
+import org.reflections.Reflections;
+import org.reflections.scanners.Scanners;
+import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +23,14 @@ import java.util.stream.StreamSupport;
 
 public final class DependencyManager {
 
+    private static final List<String> packageNames;
     private static DependencyManager instance;
     private static boolean alreadyInitialized = false;
+
+    static {
+        packageNames = new ArrayList<>();
+    }
+
     private final ExecutorService executor;
     private final Map<Class<?>, Object> createdObjects;
     private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
@@ -33,31 +42,45 @@ public final class DependencyManager {
     }
 
     public static DependencyManager getDependencyManager() {
-        //Singleton
+        // Add package name of the caller class to be scanned
+        packageNames.add(ClassUtils.getCurrentClass().getPackageName());
+
         if (instance == null) {
             instance = new DependencyManager();
         }
+
         return instance;
     }
 
-    public void init() {
+    public void init(boolean printInfo) {
         if (alreadyInitialized) throw new IllegalStateException("Dependency already initialized");
         alreadyInitialized = true;
 
         Instant start = Instant.now();
-        logger.info("Loading classes, dependencies, fields and methods...");
+        logger.info("Loading classes, dependencies, fields and methods from packages: {}", packageNames);
         indexClasses();
-        logger.info("Generating load order...");
-        logger.info(printClassesAndInfo());
-        logger.info("Creating instances...");
+        logger.info("Indexed classes and generated load order in... {}", differenceInstants(start));
         createInstances();
-        logger.info("Injecting fields...");
+        logger.info("Created instances in... {}", differenceInstants(start));
         injectFields();
-        logger.info("Running methods...");
+        logger.info("Injected fields in... {}", differenceInstants(start));
         runMethods();
-        logger.info("Finished in " + (Instant.now().toEpochMilli() - start.toEpochMilli()) + "ms");
+        logger.info("Executed methods in... {}", differenceInstants(start));
+        logger.info("Finished in {}", differenceInstants(start));
 
-        start = Instant.now();
+        if (printInfo) printClassesAndInfo();
+
+        this.shutdown();
+    }
+
+    private void shutdown() {
+        Instant start = Instant.now();
+
+        createdObjects.clear();
+        sortedDependencies.clear();
+        packageNames.clear();
+
+        logger.info("Shutting down executor...");
         executor.shutdown();
 
         try {
@@ -69,20 +92,27 @@ public final class DependencyManager {
         logger.info("Shutdown executor in " + (Instant.now().toEpochMilli() - start.toEpochMilli()) + "ms");
     }
 
+    private String differenceInstants(Instant last) {
+        return (Instant.now().toEpochMilli() - last.toEpochMilli()) + "ms";
+    }
+
     private void indexClasses() {
         Iterable<Class<?>> classes = getClasses();
         List<Dependency> dependencies = new ArrayList<>();
 
         //Maybe use parallelStream()?
-        StreamSupport.stream(classes.spliterator(), false)
+        /*StreamSupport.stream(classes.spliterator(), false)
                 .map(this::computeClass)
-                .forEach(dependencies::add);
+                .forEach(dependencies::add);*/
 
+        for (Class<?> clazz : classes) {
+            dependencies.add(computeClass(clazz));
+        }
         sortedDependencies = sortDependencies(dependencies);
     }
 
     /**
-     * Add a Dependency object to the list of dependencies. Note: <b>can only be used before {@link DependencyManager#init()}</b>
+     * Add a Dependency object to the list of dependencies. Note: <b>can only be used before {@link DependencyManager#init(boolean)}</b>
      *
      * @param object Dependency object
      */
@@ -104,7 +134,7 @@ public final class DependencyManager {
     }
 
     /**
-     * Add a Dependency to list of dependencies. Note: <b>can only be used before {@link DependencyManager#init()}</b>
+     * Add a Dependency to list of dependencies. Note: <b>can only be used before {@link DependencyManager#init(boolean)}</b>
      *
      * @param clazz  Class of the dependency
      * @param object Object of the dependency
@@ -221,10 +251,18 @@ public final class DependencyManager {
     private Iterable<Class<?>> getClasses() {
         //get all classes annotated with AutoLoadable over the whole jvm
         ClassLoader jvmClassLoader = ClassLoader.getSystemClassLoader();
-        return ClassIndex.getAnnotated(AutoLoadable.class, jvmClassLoader);
+        //
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .addClassLoaders(jvmClassLoader)
+                .setParallel(true)
+                .setScanners(Scanners.TypesAnnotated)
+                .forPackages(packageNames.toArray(new String[0]))
+        );
+
+        return reflections.getTypesAnnotatedWith(AutoLoadable.class);
     }
 
-    private String printClassesAndInfo() {
+    private void printClassesAndInfo() {
         StringBuilder builder = new StringBuilder("Classes to load:\n");
         Dependency[] dependencies = sortedDependencies.toArray(new Dependency[0]);
         for (int i = 0; i < dependencies.length; i++) {
@@ -247,7 +285,7 @@ public final class DependencyManager {
                     .append("   Injection methods: ").append(injectionMethodNames)
                     .append("\n");
         }
-        return builder.toString();
+        logger.info(builder.toString());
     }
 
     private void runMethods() {
