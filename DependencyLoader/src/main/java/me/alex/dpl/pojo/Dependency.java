@@ -28,7 +28,7 @@ public final class Dependency {
     }
 
     public List<Field> getInjectionFields() {
-        return injectionFields;
+        return List.copyOf(injectionFields);
     }
 
 
@@ -37,7 +37,7 @@ public final class Dependency {
     }
 
     public List<AutoRunMethod> getInjectionMethods() {
-        return injectionMethods;
+        return List.copyOf(injectionMethods);
     }
 
     public List<Class<?>> getConstructorParameters() {

@@ -5,14 +5,11 @@ import me.alex.dpl.annotation.AutoRun;
 import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
 import me.alex.dpl.pojo.Dependency;
-import me.alex.dpl.utils.ClassUtils;
-import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.reflections.scanners.Scanners;
 import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.reflect.ReflectionFactory;
 
 import java.lang.reflect.*;
 import java.time.Instant;
@@ -21,42 +18,41 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.StreamSupport;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DependencyManager {
 
-    private static final List<String> packageNames;
     private static DependencyManager instance;
-    private static boolean alreadyInitialized = false;
-
-    static {
-        packageNames = new ArrayList<>();
-    }
-
+    private final Set<String> packageNames;
+    private final StackWalker walker;
+    private final AtomicBoolean alreadyInit;
     private final ExecutorService executor;
     private final Map<Class<?>, Object> createdObjects;
     private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
     private List<Dependency> sortedDependencies;
 
     private DependencyManager() {
-        this.createdObjects = new ConcurrentHashMap<>();
-        this.executor = Executors.newCachedThreadPool();
+        walker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+        packageNames = new HashSet<>();
+        alreadyInit = new AtomicBoolean(false);
+        executor = Executors.newCachedThreadPool();
+        createdObjects = new ConcurrentHashMap<>();
     }
 
     public static synchronized DependencyManager getDependencyManager() {
-        // Add package name of the caller class to be scanned
-        packageNames.add(ClassUtils.getCurrentPackageName());
-
         if (instance == null) {
             instance = new DependencyManager();
         }
 
+        String packageName = instance.walker.getCallerClass().getPackageName();
+        instance.packageNames.add(packageName);
+
         return instance;
     }
 
-    public void init(boolean printInfo) {
-        if (alreadyInitialized) throw new IllegalStateException("Dependency already initialized");
-        alreadyInitialized = true;
+    public void init(final boolean printInfo) {
+        if (alreadyInit.get()) throw new IllegalStateException("Dependency already initialized");
+        alreadyInit.compareAndExchange(false, true);
 
         Instant start = Instant.now();
         logger.info("Loading classes, dependencies, fields and methods from packages: {}", packageNames);
@@ -102,14 +98,10 @@ public final class DependencyManager {
         Iterable<Class<?>> classes = getClasses();
         List<Dependency> dependencies = new ArrayList<>();
 
-        //Maybe use parallelStream()?
-        /*StreamSupport.stream(classes.spliterator(), false)
-                .map(this::computeClass)
-                .forEach(dependencies::add);*/
-
         for (Class<?> clazz : classes) {
             dependencies.add(computeClass(clazz));
         }
+
         sortedDependencies = sortDependencies(dependencies);
     }
 
@@ -142,7 +134,7 @@ public final class DependencyManager {
      * @param object Object of the dependency
      */
     public synchronized void addDependency(Class<?> clazz, Object object) {
-        if (alreadyInitialized)
+        if (alreadyInit.get())
             throw new IllegalStateException("Dependency already initialized. You can't add new dependencies after initialization");
         if (!clazz.equals(object.getClass()))
             throw new IllegalArgumentException("Class and object class are not equal");
