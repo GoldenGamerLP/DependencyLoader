@@ -1,3 +1,4 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/goldengamerlp/dependencyloader/badge)](https://www.codefactor.io/repository/github/goldengamerlp/dependencyloader) [![](https://jitpack.io/v/GoldenGamerLP/DependencyLoader.svg)](https://jitpack.io/#GoldenGamerLP/DependencyLoader)
 # Automatic Dependency Loader for Java
 
 ## What is DPL?
