@@ -20,17 +20,32 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+/**
+ * The {@link DependencyManager} is the main class of this library.
+ * It is used to load all dependencies and inject them into each other.
+ *
+ * @author Alexander Weishaupt
+ * @see <a href="https://github.com/GoldenGamerLP/DependencyLoader">Github Project</a>
+ * @see AutoLoadable
+ * @see AutoRun
+ * @see DependencyConstructor
+ * @see Inject
+ * @since 1.0.0
+ */
 public final class DependencyManager {
 
     private static DependencyManager instance;
+    private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
     private final Set<String> packageNames;
     private final StackWalker walker;
     private final AtomicBoolean alreadyInit;
     private final ExecutorService executor;
     private final Map<Class<?>, Object> createdObjects;
-    private final Logger logger = LoggerFactory.getLogger(DependencyManager.class);
     private List<Dependency> sortedDependencies;
 
+    /**
+     * A private constructor to prevent multiple instances of {@link DependencyManager}.
+     */
     private DependencyManager() {
         walker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
         packageNames = new HashSet<>();
@@ -39,6 +54,13 @@ public final class DependencyManager {
         createdObjects = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Returns a singleton instance of {@link DependencyManager}.
+     * By calling this Method, the package of the calling class is added to {@link #packageNames}.
+     * {@link #packageNames} is indexed at {@link #init(boolean)}.
+     *
+     * @return a singleton instance of {@link DependencyManager}
+     */
     public static synchronized DependencyManager getDependencyManager() {
         if (instance == null) {
             instance = new DependencyManager();
@@ -50,6 +72,12 @@ public final class DependencyManager {
         return instance;
     }
 
+    /**
+     * Initializes the process of indexing classes, creating instances, injecting fields and running methods. <br>
+     * <b>This method can only be called per instance once.</b>
+     *
+     * @param printInfo if true, the method {@link #printClassesAndInfo()} will be called after the process is finished
+     */
     public void init(final boolean printInfo) {
         if (alreadyInit.get()) throw new IllegalStateException("Dependency already initialized");
         alreadyInit.compareAndExchange(false, true);
