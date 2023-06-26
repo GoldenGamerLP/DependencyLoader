@@ -1,10 +1,10 @@
 package me.alex.dpl.examples.dependencies;
 
+
 import me.alex.dpl.annotation.AutoLoadable;
 import me.alex.dpl.annotation.AutoRun;
 import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
-import me.alex.dpl.examples.Main;
 
 @AutoLoadable
 public class AllDeps {
@@ -33,6 +33,5 @@ public class AllDeps {
         System.out.println(test2 != null);
         System.out.println(test9 != null);
         System.out.println(" dasdadsa --->" + Thread.currentThread().getName());
-        Main.test();
     }
 }

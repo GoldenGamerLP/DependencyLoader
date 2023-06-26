@@ -5,11 +5,13 @@ plugins {
 group 'me.alex'
 version '1.2'
 
+dependencies {
+    implementation(project(':DependencyLoader'))
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
-
-    System.out.println("Project: " + project.name)
 
     java {
         sourceCompatibility = JavaVersion.VERSION_17

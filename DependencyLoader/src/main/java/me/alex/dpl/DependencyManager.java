@@ -127,7 +127,7 @@ public final class DependencyManager {
         List<Dependency> dependencies = new ArrayList<>();
 
         for (Class<?> clazz : classes) {
-            dependencies.add(computeClass(clazz));
+            dependencies.add(processClass(clazz));
         }
 
         sortedDependencies = sortDependencies(dependencies);
@@ -226,7 +226,7 @@ public final class DependencyManager {
         return null;
     }
 
-    private Dependency computeClass(Class<?> klass) {
+    private Dependency processClass(Class<?> klass) {
         List<Constructor<?>> constructor = Arrays.stream(klass.getConstructors())
                 .filter(constructor1 -> constructor1.isAnnotationPresent(DependencyConstructor.class))
                 .toList();
@@ -254,13 +254,13 @@ public final class DependencyManager {
         List<Field> fieldErrors = checkFields(klass, fields);
 
         if (!errors.isEmpty()) {
-            throw new RuntimeException("Class " + klass.getName() + " has invalid parameters: " + errors);
+            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid parameters: " + errors);
         }
         if (!fieldErrors.isEmpty()) {
-            throw new RuntimeException("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
+            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
         }
         if (!methodErrors.isEmpty()) {
-            throw new RuntimeException("Class " + klass.getName() + " has invalid methods: " + methodErrors);
+            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid methods: " + methodErrors);
         }
 
         //sort the methods by priority
