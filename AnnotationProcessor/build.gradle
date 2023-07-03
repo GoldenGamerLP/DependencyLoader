@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group = 'me.alex'
+version = '1.2'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(project(':CUEW'))
+}
+
+tasks.withType(JavaCompile) {
+    options.sourcepath = sourceSets.main.resources.getSourceDirectories()
+}

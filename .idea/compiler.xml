@@ -3,6 +3,15 @@
   <component name="CompilerConfiguration">
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$PROJECT_DIR$/AnnotationProcessor/build/libs/AnnotationProcessor-1.2.jar" />
+          <entry name="$PROJECT_DIR$/CUEW/build/libs/CUEW-1.2.jar" />
+        </processorPath>
+        <module name="org.example.DependencyTest.DependencyExamples.main" />
+        <module name="DependencyTest.DependencyLoader.main" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="17" />
   </component>
