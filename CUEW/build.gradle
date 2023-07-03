@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+}
+
+group = 'me.alex'
+version = '1.2'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+}
