@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.jetbrains:annotations:24.0.0'
+    compileOnly 'org.jetbrains:annotations:24.0.1'
 
     //https://stackoverflow.com/questions/35932810/gradle-executing-custom-annotation-processor-during-compile-time
     implementation(project(':CUEW'))
