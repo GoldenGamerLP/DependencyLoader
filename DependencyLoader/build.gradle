@@ -10,17 +10,10 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.reflections:reflections:0.10.2'
-
     compileOnly 'org.jetbrains:annotations:24.0.0'
 
-    //Slf4j
-    implementation 'org.slf4j:slf4j-api:1.7.30'
-    implementation 'org.slf4j:slf4j-simple:1.7.30'
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    //https://stackoverflow.com/questions/35932810/gradle-executing-custom-annotation-processor-during-compile-time
+    implementation(project(':CUEW'))
+    annotationProcessor(project(':AnnotationProcessor'))
+    implementation(project(':AnnotationProcessor'))
 }

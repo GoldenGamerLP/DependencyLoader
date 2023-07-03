@@ -14,6 +14,4 @@ import java.lang.annotation.Target;
 @Target(java.lang.annotation.ElementType.CONSTRUCTOR)
 @Documented
 public @interface DependencyConstructor {
-
-
 }

@@ -3,7 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyExamples/DependencyTest.DependencyExamples.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyExamples/DependencyTest.DependencyExamples.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyLoader/DependencyTest.DependencyLoader.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyLoader/DependencyTest.DependencyLoader.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyTest.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyTest.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyExamples/org.example.DependencyTest.DependencyExamples.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyExamples/org.example.DependencyTest.DependencyExamples.main.iml" />
     </modules>
   </component>
 </project>

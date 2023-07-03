@@ -2,5 +2,5 @@ rootProject.name = 'DependencyTest'
 include 'DependencyLoader'
 include 'DependencyExamples'
 include 'AnnotationProcessor'
-
+include 'CUEW'
 

@@ -1,7 +1,5 @@
 package me.alex.dpl.pojo;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -78,7 +76,7 @@ public final class Dependency {
         }
 
         @Override
-        public int compareTo(@NotNull Dependency.AutoRunMethod o) {
+        public int compareTo(Dependency.AutoRunMethod o) {
             return Integer.compare(priority, o.priority);
         }
     }

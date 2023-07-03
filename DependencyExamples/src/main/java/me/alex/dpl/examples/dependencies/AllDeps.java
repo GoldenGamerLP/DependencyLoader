@@ -1,6 +1,5 @@
 package me.alex.dpl.examples.dependencies;
 
-
 import me.alex.dpl.annotation.AutoLoadable;
 import me.alex.dpl.annotation.AutoRun;
 import me.alex.dpl.annotation.DependencyConstructor;

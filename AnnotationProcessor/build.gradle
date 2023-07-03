@@ -10,17 +10,8 @@ repositories {
 }
 
 dependencies {
-    implementation(project(':DependencyLoader'))
-    compileOnly 'com.google.auto.service:auto-service:1.0-rc2'
+    implementation(project(':CUEW'))
 }
-
-
-/*tasks.withType(JavaCompile) {
-    //load class me/alex/dpl/annotationprocessor/Processor.java
-    options.setAnnotationProcessorPath()
-    //add annotation processor
-    options.compilerArgs.addAll('-processor', 'me.alex.dpl.annotationprocessor.Processor')
-}*/
 
 tasks.withType(JavaCompile) {
     options.sourcepath = sourceSets.main.resources.getSourceDirectories()

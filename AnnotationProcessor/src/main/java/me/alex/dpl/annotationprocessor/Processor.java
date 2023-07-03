@@ -1,13 +1,16 @@
 package me.alex.dpl.annotationprocessor;
 
-import com.google.auto.service.AutoService;
+import me.alex.dpl.annotation.AutoLoadable;
+import me.alex.dpl.annotation.DependencyConstructor;
+import me.alex.dpl.annotation.Inject;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.*;
-import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.*;
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -16,25 +19,30 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.google.auto.common.MoreElements.getPackage;
-
 @SupportedAnnotationTypes("me.alex.dpl.annotation.AutoLoadable")
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
-@AutoService(Processor.class)
 public class Processor extends AbstractProcessor {
 
     private final String ANNOTATION_STORAGE_FILE = "META-INF/annotations";
     private final ArrayList<String> foundAnnotations = new ArrayList<>();
+    private final Class<? extends Annotation> annotationClass = AutoLoadable.class;
+    private final Class<? extends Annotation> dependencyConstrutor = DependencyConstructor.class;
+    private final Class<? extends Annotation> injectClass = Inject.class;
+    private final Map<String, List<String>> dependencies = new ConcurrentHashMap<>();
     private Messager messager;
-    private final Class<? extends Annotation> annotationClass = me.alex.dpl.annotation.AutoLoadable.class;
-    private final Class<? extends Annotation> dependencyConstrutor = me.alex.dpl.annotation.DependencyConstructor.class;
-    private final Class<? extends Annotation> injectClass = me.alex.dpl.annotation.Inject.class;
     private Filer filer;
     private DependencyHandler dependencyHandler;
-    private Elements elementUtils;
     private Types typeUtils;
-    private Map<String,List<String>> dependencies = new ConcurrentHashMap<>();
 
+    private static void readOldIndexFile(Set<String> entries, Reader reader) throws IOException {
+        try (BufferedReader bufferedReader = new BufferedReader(reader)) {
+            String line = bufferedReader.readLine();
+            while (line != null) {
+                entries.add(line);
+                line = bufferedReader.readLine();
+            }
+        }
+    }
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -42,7 +50,6 @@ public class Processor extends AbstractProcessor {
         filer = processingEnv.getFiler();
         messager = processingEnv.getMessager();
         dependencyHandler = new DependencyHandler();
-        elementUtils = processingEnv.getElementUtils();
         typeUtils = processingEnv.getTypeUtils();
         messager.printMessage(Diagnostic.Kind.NOTE, "Starting annotation processing...");
 
@@ -56,7 +63,7 @@ public class Processor extends AbstractProcessor {
 
         roundEnv.getElementsAnnotatedWith(annotationClass).forEach(element -> {
             if (element.getKind() == ElementKind.CLASS) {
-                if(element instanceof TypeElement typeElement) {
+                if (element instanceof TypeElement typeElement) {
                     String className = typeElement.getQualifiedName().toString();
                     if (!dependencies.containsKey(className)) {
                         dependencies.put(className, new ArrayList<>());
@@ -72,9 +79,9 @@ public class Processor extends AbstractProcessor {
                 String className = enclosingElement.getQualifiedName().toString();
 
                 dependencies.computeIfPresent(className, (key, value) -> {
-                    for(VariableElement parameter : constructor.getParameters()) {
+                    for (VariableElement parameter : constructor.getParameters()) {
                         TypeElement typeElement = (TypeElement) typeUtils.asElement(parameter.asType());
-                        if(typeElement != null) {
+                        if (typeElement != null) {
                             value.add(typeElement.getQualifiedName().toString());
                         }
                     }
@@ -92,7 +99,7 @@ public class Processor extends AbstractProcessor {
 
                 dependencies.computeIfPresent(className, (key, value) -> {
                     TypeElement typeElement = (TypeElement) typeUtils.asElement(field.asType());
-                    if(typeElement != null) {
+                    if (typeElement != null) {
                         value.add(typeElement.getQualifiedName().toString());
                     }
                     return value;
@@ -103,16 +110,16 @@ public class Processor extends AbstractProcessor {
 
         List<DependencyHandler.Dependency> classes = new ArrayList<>();
 
-        for(Map.Entry<String,List<String>> dep : dependencies.entrySet()) {
+        for (Map.Entry<String, List<String>> dep : dependencies.entrySet()) {
             String className = dep.getKey();
             List<String> dependencies = dep.getValue();
-            classes.add(new DependencyHandler.Dependency(className,dependencies));
+            classes.add(new DependencyHandler.Dependency(className, dependencies));
         }
 
         classes = dependencyHandler.sortDependencies(classes);
 
         Set<String> sortedClasses = new LinkedHashSet<>();
-        for(DependencyHandler.Dependency dep : classes) {
+        for (DependencyHandler.Dependency dep : classes) {
             sortedClasses.add(dep.getKlass());
 
             messager.printMessage(Diagnostic.Kind.NOTE, "Found " + dep.getKlass() + " with dependencies " + Arrays.toString(dep.getDependencies().toArray()));
@@ -190,16 +197,6 @@ public class Processor extends AbstractProcessor {
             }
             writer.flush();
             messager.printMessage(Diagnostic.Kind.NOTE, "Wrote annotation storage file: " + file.toUri());
-        }
-    }
-
-    private static void readOldIndexFile(Set<String> entries, Reader reader) throws IOException {
-        try (BufferedReader bufferedReader = new BufferedReader(reader)) {
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                entries.add(line);
-                line = bufferedReader.readLine();
-            }
         }
     }
 }

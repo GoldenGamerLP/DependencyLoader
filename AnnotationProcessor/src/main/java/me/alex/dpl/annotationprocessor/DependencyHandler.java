@@ -1,13 +1,5 @@
 package me.alex.dpl.annotationprocessor;
 
-import me.alex.dpl.annotation.AutoRun;
-import me.alex.dpl.annotation.DependencyConstructor;
-import me.alex.dpl.annotation.Inject;
-import me.alex.dpl.pojo.Dependency;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class DependencyHandler {
