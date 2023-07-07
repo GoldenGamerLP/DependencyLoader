@@ -13,6 +13,6 @@ dependencies {
     implementation(project(':CUEW'))
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.sourcepath = sourceSets.main.resources.getSourceDirectories()
 }

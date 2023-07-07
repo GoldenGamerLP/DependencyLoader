@@ -8,14 +8,12 @@ import java.util.List;
 
 public final class Dependency {
     private final Class<?> clazz;
-    private final List<Class<?>> dependencies;
     private final Constructor<?> constructor;
     private final List<Field> injectionFields;
     private final List<AutoRunMethod> injectionMethods;
 
     public Dependency(Class<?> clazz, Constructor<?> cons, List<Class<?>> dependencies, List<Field> injectionFields, List<AutoRunMethod> injectionMethods) {
         this.clazz = clazz;
-        this.dependencies = dependencies;
         this.constructor = cons;
         this.injectionFields = injectionFields;
         this.injectionMethods = injectionMethods;

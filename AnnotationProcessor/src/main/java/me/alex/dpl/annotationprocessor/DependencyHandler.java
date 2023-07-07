@@ -70,7 +70,7 @@ public class DependencyHandler {
         }
 
         public List<String> getDependencies() {
-            return dependencies;
+            return Collections.unmodifiableList(dependencies);
         }
     }
 }

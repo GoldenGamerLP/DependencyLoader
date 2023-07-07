@@ -4,6 +4,7 @@ import me.alex.dpl.annotation.AutoRun;
 import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
 import me.alex.dpl.pojo.Dependency;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,26 +14,39 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * The DependencyManager is the main class of this library. It is responsible for loading all dependencies and injecting them into each other.
+ * <p>
+ * The DependencyManager is a singleton and can be accessed via {@link #getDependencyManager()}.
+ *
+ * @author Alexander W / GoldenGamer
+ * @version 1.0
+ * @serial 1L
+ */
 public class DependencyManager {
-
     private static DependencyManager dependencyManager;
-    private final static String ANNOTATIONS = "META-INF/annotations";
     private final Map<Class<?>, Object> objectCache = new ConcurrentHashMap<>();
     private final Logger log = Logger.getLogger(this.getClass().getSimpleName());
     private final AtomicBoolean init = new AtomicBoolean(false);
+    private final ExecutorService executorService = Executors.newWorkStealingPool(ForkJoinPool.getCommonPoolParallelism());
 
+    //Non-Instantiable
     private DependencyManager() {
     }
 
-    //Singleton
+    /**
+     * Returns the DependencyManager instance
+     *
+     * @return {@link DependencyManager}
+     */
     public synchronized static DependencyManager getDependencyManager() {
         if (dependencyManager == null) {
             dependencyManager = new DependencyManager();
@@ -40,11 +54,15 @@ public class DependencyManager {
         return dependencyManager;
     }
 
+    /**
+     * Initializes the DependencyManager and loads all dependencies. This method can only be called once.
+     */
     public synchronized void init() {
         if (init.compareAndExchange(false, true)) {
             log.log(Level.SEVERE, "DependencyManager#init can only be called once.");
         }
-        //Read meta-inf file
+
+        //Start of loading
         Instant now = Instant.now();
         //The classes are already in the right order from the Annotation processor
         List<Class<?>> indexedClasses = readClasses(this.getClass().getClassLoader());
@@ -54,18 +72,61 @@ public class DependencyManager {
         injectFields(fetchedClasses);
         runMethods(fetchedClasses);
 
+        //End of loading
+        executorService.shutdown();
+
+        try {
+            boolean t = executorService.awaitTermination(1, TimeUnit.SECONDS);
+            if (!t) {
+                log.severe("Failed to await termination of executor service.");
+            }
+        } catch (InterruptedException e) {
+            log.severe("Failed to await termination of executor service.");
+        }
+
         log.info("Success! Finished loading in " + (Instant.now().toEpochMilli() - now.toEpochMilli()) + "ms. With " + fetchedClasses.size() + " classes.");
     }
 
+    /**
+     * Adds a standalone class to the DependencyManager.
+     *
+     * @param obj {@link Object} Any object
+     */
     public void addDependency(Object obj) {
         objectCache.putIfAbsent(obj.getClass(), obj);
     }
 
+    /**
+     * Gets a class from the {@link DependencyManager} cache. Returns null if the class is not found.
+     *
+     * @param clazz The class to get
+     * @param <T>   The class type
+     * @return {@link T} The class
+     */
+    @Nullable
+    public <T> T getDependency(Class<T> clazz) {
+        Object obj = objectCache.get(clazz);
+
+        if (obj == null) {
+            return null;
+        }
+
+        return clazz.cast(obj);
+    }
+
     private List<Dependency> fetchClasses(List<Class<?>> classesToIndex) {
-        return classesToIndex.stream()
-                .parallel()
-                .map(this::processClass)
-                .toList();
+        List<Dependency> dependencies = new ArrayList<>();
+        List<Future<Dependency>> futures = classesToIndex.stream().map(aClass -> executorService.submit(() -> processClass(aClass))).toList();
+
+        for (Future<Dependency> future : futures) {
+            try {
+                dependencies.add(future.get());
+            } catch (InterruptedException | ExecutionException e) {
+                log.severe("Failed to fetch class.");
+            }
+        }
+
+        return dependencies;
     }
 
     private void injectFields(List<Dependency> dependencies) {
@@ -89,13 +150,13 @@ public class DependencyManager {
     }
 
     public List<Class<?>> readClasses(ClassLoader loader) {
-        Set<String> foundEntries = new LinkedHashSet<>();
-        InputStream stream = getClass().getClassLoader().getResourceAsStream(this.ANNOTATIONS);
+        List<String> foundEntries = new ArrayList<>();
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(Constants.ANNOTATION_STORAGE_FILE);
         if (stream == null) {
             log.info("Failed to find indexed class file.");
             return List.of();
         }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8), 8192 / 2)) {
             while (reader.ready()) {
                 String line = reader.readLine();
                 foundEntries.add(line);
@@ -104,14 +165,35 @@ public class DependencyManager {
             log.info("Error while reading indexed class file.");
         }
 
-        List<Class<?>> classes = new LinkedList<>();
-        for (String foundEntry : foundEntries) {
+        List<Class<?>> classes = new ArrayList<>();
+        List<Future<Class<?>>> futures = new ArrayList<>();
+
+        for (String entry : foundEntries) {
+            futures.add(executorService.submit(() -> {
+                try {
+                    return loader.loadClass(entry);
+                } catch (ClassNotFoundException e) {
+                    log.info("Failed to find class " + entry);
+                    return null;
+                }
+            }));
+        }
+
+        for (Future<Class<?>> future : futures) {
             try {
-                classes.add(loader.loadClass(foundEntry));
-            } catch (ClassNotFoundException e) {
-                log.info("Did not find the class: " + foundEntry + ". Did you change something at compiletime?");
+                Class<?> clazz = future.get();
+
+                if (clazz == null) {
+                    continue;
+                }
+
+                classes.add(clazz);
+            } catch (InterruptedException | ExecutionException e) {
+                log.severe("Failed to get class from future.");
             }
         }
+
+
         return classes;
     }
 
@@ -119,7 +201,7 @@ public class DependencyManager {
         for (Dependency dependency : dependencies) {
             Object object = objectCache.get(dependency.getClazz());
             if (object == null) {
-                throw new RuntimeException("Failed to run methods in class " + dependency.getClazz().getName() + " because the object is null");
+                log.severe("Failed to run methods in class " + dependency.getClazz().getName() + " because the object is null");
             }
             for (Dependency.AutoRunMethod autoRunMethod : dependency.getInjectionMethods()) {
                 if (autoRunMethod.isAsync()) {
@@ -137,14 +219,14 @@ public class DependencyManager {
             method.setAccessible(true);
             method.invoke(object);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Failed to run method " + method.getName() + " in class " + method.getClass());
+            log.severe("Failed to run method " + method.getName() + " in class " + object.getClass().getName());
         }
     }
 
     private void createInstances(List<Dependency> dependencies) {
         for (Dependency dependency : dependencies) {
             if (objectCache.containsKey(dependency.getClazz())) {
-                System.out.println("Class " + dependency.getClazz().getName() + " already created");
+                log.warning("Dependency " + dependency.getClazz().getName() + " already exists in cache. Skipping.");
                 continue;
             }
 
@@ -153,7 +235,8 @@ public class DependencyManager {
                 Class<?> depClass = dependency.getConstructorParameters().get(i);
                 Object para = objectCache.get(depClass);
                 if (para == null) {
-                    throw new RuntimeException("Dependency " + depClass.getName() + " not found");
+                    log.severe("Failed to find dependency " + depClass.getName() + " for class " + dependency.getClazz().getName());
+                    return;
                 }
                 parameters[i] = para;
             }
@@ -166,8 +249,9 @@ public class DependencyManager {
         try {
             return dependency.getConstructor().newInstance(parameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Error while creating instance of class " + dependency.getClazz().getName(), e);
+            log.severe("Failed to create instance of class " + dependency.getClazz().getName());
         }
+        return null;
     }
 
     private Dependency processClass(Class<?> klass) {
@@ -175,7 +259,8 @@ public class DependencyManager {
                 .filter(constructor1 -> constructor1.isAnnotationPresent(DependencyConstructor.class))
                 .toList();
         if (constructor.size() != 1) {
-            throw new RuntimeException("Class " + klass.getName() + " has no or more than one constructor annotated with @DependencyConstructor");
+            log.severe("Class " + klass.getName() + " has " + constructor.size() + " constructors with the DependencyConstructor annotation. There should only be one.");
+            return null;
         }
 
         Constructor<?> cons = constructor.get(0);
@@ -198,13 +283,13 @@ public class DependencyManager {
         List<Field> fieldErrors = checkFields(klass, fields);
 
         if (!errors.isEmpty()) {
-            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid parameters: " + errors);
+            log.severe("Class " + klass.getName() + " has invalid dependencies: " + errors);
         }
         if (!fieldErrors.isEmpty()) {
-            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
+            log.severe("Class " + klass.getName() + " has invalid fields: " + fieldErrors);
         }
         if (!methodErrors.isEmpty()) {
-            throw new IllegalArgumentException("Class " + klass.getName() + " has invalid methods: " + methodErrors);
+            log.severe("Class " + klass.getName() + " has invalid methods: " + methodErrors);
         }
 
         //sort the methods by priority
@@ -253,7 +338,7 @@ public class DependencyManager {
             } else {
                 //check if parametertype has clazz as parameter
                 if (parameterType.equals(clazz)) {
-                    throw new RuntimeException("Class " + clazz.getName() + " has a circular dependency");
+                    log.severe("Class " + clazz.getName() + " has a circular dependency with class " + parameterType.getName());
                 }
             }
         }

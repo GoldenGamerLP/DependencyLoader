@@ -1,5 +1,6 @@
 package me.alex.dpl.annotationprocessor;
 
+import me.alex.dpl.Constants;
 import me.alex.dpl.annotation.AutoLoadable;
 import me.alex.dpl.annotation.DependencyConstructor;
 import me.alex.dpl.annotation.Inject;
@@ -16,14 +17,13 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 import java.io.*;
 import java.lang.annotation.Annotation;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SupportedAnnotationTypes("me.alex.dpl.annotation.AutoLoadable")
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class Processor extends AbstractProcessor {
-
-    private final String ANNOTATION_STORAGE_FILE = "META-INF/annotations";
     private final ArrayList<String> foundAnnotations = new ArrayList<>();
     private final Class<? extends Annotation> annotationClass = AutoLoadable.class;
     private final Class<? extends Annotation> dependencyConstrutor = DependencyConstructor.class;
@@ -127,7 +127,7 @@ public class Processor extends AbstractProcessor {
         messager.printMessage(Diagnostic.Kind.NOTE, "Found " + Arrays.toString(sortedClasses.toArray()));
 
         try {
-            writeSimpleNameIndexFile(sortedClasses, ANNOTATION_STORAGE_FILE);
+            writeSimpleNameIndexFile(sortedClasses, Constants.ANNOTATION_STORAGE_FILE);
         } catch (IOException e) {
             messager.printMessage(Diagnostic.Kind.ERROR, "Failed to write annotation storage file: " + e.getMessage());
         }
@@ -169,7 +169,7 @@ public class Processor extends AbstractProcessor {
              */
             final String realPath = e.getMessage();
             if (new File(realPath).exists()) {
-                try (Reader fileReader = new FileReader(realPath)) {
+                try (Reader fileReader = new FileReader(realPath, StandardCharsets.UTF_8)) {
                     readOldIndexFile(entries, fileReader);
                 }
             }
