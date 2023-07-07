@@ -4,7 +4,8 @@
 
 ## What is DPL?
 
-DPL is a simple dependency loader for Java. DPL allows you to load dependencies (Classes) automatically without needing to
+DPL is a simple dependency loader for Java. DPL allows you to load dependencies (Classes) automatically without needing
+to
 import them by using annotations. It is very useful for large projects and even small projects by making your life
 easier and doing the hard work, loading dependencies, injecting dependencies, running methods and ordering dependencies.
 I made this project because other injection libraries were too complicated for a simple project, so I started DPL.
@@ -78,7 +79,9 @@ DPL uses the **parameters** of the dependency constructor and the **injected fie
 ## How to use DPL in your project
 
 ### 1. Add Jitpack as a Repository
+
 - Maven:
+
 ```xml
 <repositories>
     <repository>
@@ -87,7 +90,9 @@ DPL uses the **parameters** of the dependency constructor and the **injected fie
     </repository>
 </repositories>
 ```
+
 - Gradle:
+
 ```groovy
 repositories {
     maven { url 'https://jitpack.io' }
@@ -95,7 +100,9 @@ repositories {
 ```
 
 ### 2. Add DependencyLoader and the AnnotationProcessor as a Dependency
+
 - Maven:
+
 ```xml
 <dependencies>
     <dependency>
@@ -112,14 +119,15 @@ repositories {
     </dependency>
 </dependencies>
 ```
+
 - Gradle:
+
 ```groovy
 dependencies {
     implementation 'com.github.GoldenGamerLP:DependencyLoader:-SNAPSHOT'
     annotationProcessor 'com.github.GoldenGamerLP:DependencyLoader-AnnotationProcessor:-SNAPSHOT'
 }
 ```
-
 
 ## Contributing
 

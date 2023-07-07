@@ -9,8 +9,8 @@
           <entry name="$PROJECT_DIR$/AnnotationProcessor/build/libs/AnnotationProcessor-1.2.jar" />
           <entry name="$PROJECT_DIR$/CUEW/build/libs/CUEW-1.2.jar" />
         </processorPath>
-        <module name="org.example.DependencyTest.DependencyExamples.main" />
         <module name="DependencyTest.DependencyLoader.main" />
+        <module name="DependencyTest.DependencyExamples.main" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="17" />

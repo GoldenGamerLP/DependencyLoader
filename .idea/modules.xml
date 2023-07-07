@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyTest.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/AnnotationProcessor/DependencyTest.AnnotationProcessor.iml" filepath="$PROJECT_DIR$/.idea/modules/AnnotationProcessor/DependencyTest.AnnotationProcessor.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyExamples/DependencyTest.DependencyExamples.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyExamples/DependencyTest.DependencyExamples.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyLoader/DependencyTest.DependencyLoader.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyLoader/DependencyTest.DependencyLoader.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/DependencyTest.main.iml" filepath="$PROJECT_DIR$/.idea/modules/DependencyTest.main.iml" />
