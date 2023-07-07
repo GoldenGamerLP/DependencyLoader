@@ -3746,3 +3746,11 @@
 {"ts":1688728034306,"action":"FILE_OPENED","file":"/CUEW/src/main/java/me/alex/dpl/pojo/Dependency.java","tags":{"FILE_LINE_OF_CODE":"84"}}
 {"ts":1688728067949,"action":"FILE_CLOSED","file":"/CUEW/src/main/java/me/alex/dpl/pojo/Dependency.java","tags":{"FILE_LINE_OF_CODE":"82"}}
 {"ts":1688728067949,"action":"FILE_OPENED","file":"/.gitignore","tags":{"FILE_LINE_OF_CODE":"147"}}
+{"ts":1688728135246,"action":"FILE_CLOSED","file":"/.gitignore","tags":{"FILE_LINE_OF_CODE":"145"}}
+{"ts":1688728135246,"action":"FILE_OPENED","file":"/CUEW/src/main/java/me/alex/dpl/pojo/Dependency.java","tags":{"FILE_LINE_OF_CODE":"82"}}
+{"ts":1688728158030,"action":"IDE_DEACTIVATED"}
+{"ts":1688753748312,"action":"IDE_ACTIVATED"}
+{"ts":1688753752741,"action":"IDE_DEACTIVATED"}
+{"ts":1688753802527,"action":"IDE_ACTIVATED"}
+{"ts":1688753805799,"action":"FILE_CLOSED","file":"/CUEW/src/main/java/me/alex/dpl/pojo/Dependency.java","tags":{"FILE_LINE_OF_CODE":"82"}}
+{"ts":1688753805799,"action":"FILE_OPENED","file":"/DependencyLoader/src/main/java/me/alex/dpl/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"348"}}

@@ -205,7 +205,7 @@ public class DependencyManager {
             }
             for (Dependency.AutoRunMethod autoRunMethod : dependency.getInjectionMethods()) {
                 if (autoRunMethod.isAsync()) {
-                    CompletableFuture.runAsync(() -> runMethod(autoRunMethod, object));
+                    executorService.submit(() -> runMethod(autoRunMethod, object));
                 } else {
                     runMethod(autoRunMethod, object);
                 }
