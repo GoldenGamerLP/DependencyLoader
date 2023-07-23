@@ -116,6 +116,12 @@ repositories {
         <version>-SNAPSHOT</version>
         <scope>provided</scope>
         <optional>true</optional>
+        <exclusions>
+        <exclusion>
+          <groupId>com.github.GoldenGamerLP</groupId>
+          <artifactId>DependencyExamples</artifactId>
+        </exclusion>
+      </exclusions> 
     </dependency>
 </dependencies>
 ```
@@ -124,7 +130,9 @@ repositories {
 
 ```groovy
 dependencies {
-    implementation 'com.github.GoldenGamerLP:DependencyLoader:-SNAPSHOT'
+    implementation ('com.github.GoldenGamerLP:DependencyLoader:-SNAPSHOT') {
+      exclude module: 'DependencyExamples'
+    }
     annotationProcessor 'com.github.GoldenGamerLP:DependencyLoader-AnnotationProcessor:-SNAPSHOT'
 }
 ```
