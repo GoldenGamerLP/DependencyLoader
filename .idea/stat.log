@@ -3884,3 +3884,10 @@
 {"ts":1690738162522,"action":"FILE_OPENED","file":"/DependencyLoader/src/main/java/me/alex/dpl/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"348"}}
 {"ts":1690738242696,"action":"IDE_DEACTIVATED"}
 {"ts":1690738267662,"action":"IDE_ACTIVATED"}
+{"ts":1690738313364,"action":"IDE_DEACTIVATED"}
+{"ts":1690738411292,"action":"IDE_ACTIVATED"}
+{"ts":1690738411460,"action":"PROJECT_CLOSED","tags":{"PROJECT_NAME":"DependencyTest"}}
+{"ts":1690744741247,"action":"FILE_OPENED","file":"/DependencyLoader/src/main/java/me/alex/dpl/DependencyManager.java","tags":{"FILE_LINE_OF_CODE":"348"}}
+{"ts":1690744741599,"action":"PROJECT_OPENED","tags":{"PROJECT_NAME":"DependencyTest"}}
+{"ts":1690744743262,"action":"IDE_DEACTIVATED"}
+{"ts":1690744752937,"action":"IDE_ACTIVATED"}

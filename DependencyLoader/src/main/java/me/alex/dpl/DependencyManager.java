@@ -249,9 +249,9 @@ public class DependencyManager {
         try {
             return dependency.getConstructor().newInstance(parameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            log.severe("Failed to create instance of class " + dependency.getClazz().getName() + " with Exception: " + e.getMessage());
+            log.severe("Failed to create instance of class " + dependency.getClazz().getName());
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     private Dependency processClass(Class<?> klass) {
