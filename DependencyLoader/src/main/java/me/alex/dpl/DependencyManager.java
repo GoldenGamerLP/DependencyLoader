@@ -219,7 +219,7 @@ public class DependencyManager {
             method.setAccessible(true);
             method.invoke(object);
         } catch (IllegalAccessException | InvocationTargetException e) {
-            log.severe("Failed to run method " + method.getName() + " in class " + object.getClass().getName());
+            log.severe("Failed to run method " + method.getName() + " in class " + object.getClass().getName() + " with Exception: " + e.getMessage());
         }
     }
 
@@ -249,7 +249,7 @@ public class DependencyManager {
         try {
             return dependency.getConstructor().newInstance(parameters);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            log.severe("Failed to create instance of class " + dependency.getClazz().getName());
+            log.severe("Failed to create instance of class " + dependency.getClazz().getName() + " with Exception: " + e.getMessage());
         }
         return null;
     }
